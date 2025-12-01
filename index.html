@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drone Simulator - Made by Subham</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; transition: background 0.3s; user-select: none; }
+        
+        /* --- 1. IMPROVED START SCREEN --- */
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            /* Technical Grid Background with Transparency to see 3D Drone */
+            background-color: rgba(255, 255, 255, 0.85);
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 2000; color: #222;
+            backdrop-filter: blur(3px);
+        }
+        
+        h1 { 
+            font-size: 8vw; /* Massive Responsive Font */
+            margin: 0; 
+            font-weight: 900;
+            letter-spacing: -3px; 
+            line-height: 1;
+            text-transform: uppercase;
+            background: linear-gradient(45deg, #111, #444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle { 
+            font-size: 20px; color: #555; margin-top: 10px; 
+            font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+        }
+
+        /* SOCIAL ICONS */
+        .social-container { margin-top: 30px; display: flex; gap: 20px; }
+        .social-btn {
+            text-decoration: none; color: #333; font-size: 26px;
+            transition: 0.3s; padding: 12px; border-radius: 50%;
+            border: 2px solid #ddd; background: white;
+            width: 50px; height: 50px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .social-btn:hover { background: #222; color: #fff; transform: translateY(-5px); border-color: #222; }
+
+        /* STATUS MESSAGES */
+        .status-container { margin-top: 50px; text-align: center; }
+        
+        .status-msg { font-size: 16px; color: #777; font-weight: 500; }
+        .status-msg.ready { color: #00cc66; font-weight: 800; font-size: 18px; }
+
+        .hint-msg {
+            margin-top: 10px; font-size: 14px; color: #999;
+            animation: pulse-text 2s infinite;
+        }
+        @keyframes pulse-text { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+
+        /* START BUTTON */
+        .launch-btn {
+            margin-top: 30px; padding: 18px 50px;
+            background: #111; color: white; border-radius: 50px;
+            font-weight: bold; letter-spacing: 2px; font-size: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 2px solid transparent;
+            cursor: pointer; display: none;
+            transition: 0.3s;
+        }
+        .launch-btn:hover { transform: scale(1.05); background: #333; box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
+
+        /* --- 2. HUD STYLES --- */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        #hud-right {
+            position: absolute; top: 20px; right: 20px;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 15px; pointer-events: auto;
+        }
+
+        .hud-box {
+            background: rgba(0, 0, 0, 0.8); color: #ddd;
+            padding: 15px; border-radius: 8px; 
+            font-size: 13px; width: 220px; text-align: right;
+            backdrop-filter: blur(5px); border: 1px solid #444;
+        }
+
+        #status-box { font-weight: bold; border-right: 5px solid #ff3333; color: #ff3333; transition: 0.3s; }
+        #status-box.connected { border-right: 5px solid #33ff33; color: #33ff33; }
+
+        .vol-container { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 5px; }
+        input[type=range] { width: 100px; cursor: pointer; }
+
+        .ctrl-row { display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 2px; }
+        .ctrl-key { font-weight: bold; color: #fff; }
+
+        #telemetry-wrapper { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; }
+        #graph-legend { font-size: 11px; color: white; margin-bottom: 5px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 4px; display: flex; gap: 10px; }
+        .leg-item span { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 50%; }
+        #telemetry-container { width: 320px; height: 130px; background: rgba(0,0,0,0.85); border: 2px solid #555; border-radius: 6px; }
+
+        #mode-display {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: #00ffcc;
+            padding: 8px 25px; border: 1px solid #00ffcc; border-radius: 20px;
+            font-weight: bold; letter-spacing: 1px;
+        }
+
+        /* Light Mode In-Game Overrides */
+        body.light-mode .hud-box { background: rgba(255,255,255,0.85); color: #333; border-color: #ccc; }
+        body.light-mode .ctrl-key { color: #000; }
+        body.light-mode #telemetry-container { background: rgba(255,255,255,0.9); }
+    </style>
+</head>
+<body class="dark-mode">
+
+    <div id="start-screen">
+        <h1>DRONE SIMULATOR</h1>
+        <div class="subtitle">Made by Subham</div>
+        
+        <div class="social-container">
+            <a href="https://github.com/MSubham06" class="social-btn" target="_blank" rel="noopener noreferrer" title="GitHub">
+                <i class="fab fa-github"></i>
+            </a>
+            <a href="https://www.linkedin.com/in/msubham/" class="social-btn" target="_blank" rel="noopener noreferrer" title="LinkedIn">
+                <i class="fab fa-linkedin-in"></i>
+            </a>
+            <a href="https://www.instagram.com/irl.subhhh/" class="social-btn" target="_blank" rel="noopener noreferrer" title="Instagram">
+                <i class="fab fa-instagram"></i>
+            </a>
+        </div>
+
+        <div class="status-container">
+            <div id="connection-msg" class="status-msg">Waiting for Controller...</div>
+            <div class="hint-msg">Press any button on your controller to wake it up</div>
+        </div>
+        
+        <div class="launch-btn" id="start-btn">
+            PRESS 'A' TO START
+        </div>
+    </div>
+
+    <div id="ui-layer">
+        <div id="mode-display">MODE: 3RD PERSON</div>
+        
+        <div id="hud-right">
+            <div class="hud-box" id="status-box">Joystick: Disconnected</div>
+            
+            <div class="hud-box">
+                <div style="text-align:center; font-weight:bold; color:#aaa; margin-bottom:5px;">AUDIO MIXER</div>
+                <div class="vol-container">
+                    <span>Vol: <span id="vol-display">50%</span></span>
+                    <input type="range" id="vol-slider" min="0" max="100" value="50">
+                </div>
+            </div>
+            
+            <div class="hud-box">
+                <div style="text-align:center; font-weight:bold; margin-bottom:10px; color:#aaa;">CONTROLS</div>
+                <div class="ctrl-row"><span class="ctrl-key">L-Stick</span> <span>Throttle / Yaw</span></div>
+                <div class="ctrl-row"><span class="ctrl-key">R-Stick</span> <span>Pitch / Roll</span></div>
+                <div class="ctrl-row"><span class="ctrl-key">Btn A</span> <span>Start / FPV</span></div>
+                <div class="ctrl-row"><span class="ctrl-key">Btn B</span> <span>Reset Home</span></div>
+                <div class="ctrl-row"><span class="ctrl-key">Btn X</span> <span>Theme</span></div>
+            </div>
+        </div>
+
+        <div id="telemetry-wrapper">
+            <div id="graph-legend">
+                <div class="leg-item"><span style="background:#ff3333"></span>Throttle</div>
+                <div class="leg-item"><span style="background:#33ff33"></span>Yaw</div>
+                <div class="leg-item"><span style="background:#00ccff"></span>Pitch</div>
+                <div class="leg-item"><span style="background:#ffff33"></span>Roll</div>
+            </div>
+            <div id="telemetry-container">
+                <canvas id="graphCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        const config = {
+            dark: { bg: 0x0a0a0a, grid: 0x333333, fog: 0x0a0a0a },
+            light: { bg: 0x87CEEB, grid: 0xcccccc, fog: 0x87CEEB }
+        };
+        let isDarkMode = true;
+        let gameStarted = false;
+        let cameraMode = 'third';
+        let gamepadIndex = null;
+        let audioCtx = null;
+        let osc = null;
+        let gainNode = null;
+        let masterVolume = 0.5;
+
+        const input = { throttle: 0, yaw: 0, pitch: 0, roll: 0 };
+        const buttons = { a: false, b: false, x: false };
+
+        const volSlider = document.getElementById('vol-slider');
+        const volDisplay = document.getElementById('vol-display');
+        volSlider.addEventListener('input', (e) => {
+            masterVolume = e.target.value / 100;
+            volDisplay.innerText = `${e.target.value}%`;
+        });
+
+        function initAudio() {
+            if (audioCtx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            osc = audioCtx.createOscillator();
+            osc.type = 'sawtooth'; osc.frequency.value = 100; 
+            gainNode = audioCtx.createGain(); gainNode.gain.value = 0;
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+            osc.start();
+        }
+
+        function updateDroneSound(throttleVal) {
+            if (!audioCtx) return;
+            const targetFreq = 120 + (throttleVal * 400);
+            const targetVol = (0.05 + (throttleVal * 0.2)) * masterVolume;
+            osc.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.1);
+            gainNode.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.1);
+        }
+
+        // SCENE
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(config.dark.fog, 10, 300);
+        scene.background = new THREE.Color(config.dark.bg);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // Alpha true for background visibility
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambLight);
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        sunLight.position.set(50, 100, 50); sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048; sunLight.shadow.mapSize.height = 2048;
+        scene.add(sunLight);
+
+        const gridHelper = new THREE.GridHelper(1000, 1000, config.dark.grid, 0x222222);
+        scene.add(gridHelper);
+        const plane = new THREE.Mesh(new THREE.PlaneGeometry(1000,1000), new THREE.MeshLambertMaterial({color: 0x111111}));
+        plane.rotation.x = -Math.PI/2; plane.receiveShadow = true; scene.add(plane);
+
+        function createTree(x, z) {
+            const group = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 3, 6), new THREE.MeshLambertMaterial({color: 0x5C4033}));
+            trunk.position.y = 1.5; trunk.castShadow = true;
+            const leaves = new THREE.Mesh(new THREE.ConeGeometry(2.5, 10, 8), new THREE.MeshLambertMaterial({color: 0x2E8B57}));
+            leaves.position.y = 6.5; leaves.castShadow = true;
+            group.add(trunk, leaves); group.position.set(x, 0, z); scene.add(group);
+        }
+        function createBuilding(x, z, h, color) {
+            const geo = new THREE.BoxGeometry(15, h, 15);
+            const mat = new THREE.MeshLambertMaterial({ color: color });
+            const b = new THREE.Mesh(geo, mat); b.position.set(x, h/2, z);
+            b.castShadow = true; b.receiveShadow = true; scene.add(b);
+        }
+        for(let i=0; i<200; i++) {
+            const x = (Math.random()-0.5) * 400; const z = (Math.random()-0.5) * 400;
+            if(Math.abs(x) < 10 && Math.abs(z) < 10) continue; 
+            createTree(x, z);
+        }
+        const colors = [0xffaaaa, 0xaaffaa, 0xaaaaff, 0xffffaa];
+        for(let i=0; i<20; i++) {
+            const x = (Math.random()-0.5) * 300; const z = -100 - Math.random() * 200;
+            const h = Math.random() * 40 + 40;
+            createBuilding(x, z, h, colors[Math.floor(Math.random()*colors.length)]);
+        }
+
+        // DRONE
+        const droneGroup = new THREE.Group(); scene.add(droneGroup);
+        const droneVisuals = new THREE.Group(); droneGroup.add(droneVisuals);
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.4), new THREE.MeshLambertMaterial({ color: 0x222222 }));
+        body.castShadow = true; droneVisuals.add(body);
+        const armMat = new THREE.MeshLambertMaterial({ color: 0x444444 });
+        const arm1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.04, 0.06), armMat); arm1.rotation.y = Math.PI/4;
+        const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.04, 0.06), armMat); arm2.rotation.y = -Math.PI/4;
+        droneVisuals.add(arm1, arm2);
+        const propGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.01, 8);
+        const propMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, opacity: 0.5, transparent: true });
+        const props = [];
+        [[0.28,0.28],[-0.28,-0.28],[0.28,-0.28],[-0.28,0.28]].forEach(p => {
+            const pr = new THREE.Mesh(propGeo, propMat); pr.position.set(p[0], 0.05, p[1]);
+            droneVisuals.add(pr); props.push(pr);
+        });
+
+        let dronePos = new THREE.Vector3(0, 0.2, 0); let droneYaw = 0;
+
+        window.addEventListener("gamepadconnected", (e) => {
+            gamepadIndex = e.gamepad.index;
+            document.getElementById('status-box').innerText = "Joystick: CONNECTED";
+            document.getElementById('status-box').classList.add("connected");
+            
+            const msg = document.getElementById('connection-msg');
+            msg.innerText = "Controller Connected";
+            msg.classList.add("ready");
+            document.getElementById('start-btn').style.display = 'block';
+        });
+
+        window.addEventListener("gamepaddisconnected", () => {
+            document.getElementById('status-box').innerText = "Joystick: Disconnected";
+            document.getElementById('status-box').classList.remove("connected");
+        });
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const c = isDarkMode ? config.dark : config.light;
+            scene.background.setHex(c.bg); scene.fog.color.setHex(c.fog); gridHelper.material.color.setHex(c.grid);
+            document.body.className = isDarkMode ? 'dark-mode' : 'light-mode';
+            plane.material.color.setHex(isDarkMode ? 0x111111 : 0xdddddd);
+        }
+
+        function updateInput() {
+            if (gamepadIndex === null) return;
+            const gp = navigator.getGamepads()[gamepadIndex];
+            if (!gp) return;
+            const dz = (v) => Math.abs(v) < 0.1 ? 0 : v;
+
+            if (gp.buttons[0].pressed) {
+                if (!buttons.a) {
+                    if (!gameStarted) {
+                        gameStarted = true;
+                        initAudio(); audioCtx.resume();
+                        document.getElementById('start-screen').style.display = 'none';
+                        dronePos.set(0,0.2,0); // Reset position for game
+                        droneYaw = 0;
+                    } else {
+                        cameraMode = cameraMode === 'third' ? 'fpv' : 'third';
+                        document.getElementById('mode-display').innerText = `MODE: ${cameraMode === 'third' ? '3RD PERSON' : 'FPV'}`;
+                        droneVisuals.visible = (cameraMode === 'third');
+                    }
+                    buttons.a = true;
+                }
+            } else { buttons.a = false; }
+
+            if (gp.buttons[1].pressed) { if (!buttons.b) { dronePos.set(0, 0.2, 0); droneYaw = 0; buttons.b = true; } } else { buttons.b = false; }
+            if (gp.buttons[2].pressed) { if (!buttons.x) { toggleTheme(); buttons.x = true; } } else { buttons.x = false; }
+
+            const f = 0.1; 
+            input.throttle = input.throttle * (1-f) + dz(-gp.axes[1]) * f;
+            input.yaw = input.yaw * (1-f) + dz(gp.axes[0]) * f;
+            input.roll = input.roll * (1-f) + dz(gp.axes[2]) * f;
+            input.pitch = input.pitch * (1-f) + dz(-gp.axes[3]) * f;
+        }
+
+        function updatePhysics() {
+            // Idle Animation (When game not started)
+            if (!gameStarted) {
+                const t = Date.now() * 0.001;
+                // Hover effect
+                droneGroup.position.set(0, 2 + Math.sin(t*2)*0.2, 0);
+                // Rotate
+                droneGroup.rotation.y += 0.01;
+                // Tilt slightly
+                droneVisuals.rotation.z = Math.sin(t) * 0.1;
+                droneVisuals.rotation.x = Math.cos(t) * 0.1;
+                // Spin props slowly
+                props.forEach(p => p.rotation.y += 0.2);
+                return;
+            }
+
+            // Game Physics
+            updateDroneSound(input.throttle);
+            droneYaw -= input.yaw * 0.05;
+            dronePos.y += input.throttle * 0.2; if (dronePos.y < 0.1) dronePos.y = 0.1;
+            const speed = 0.3;
+            dronePos.z -= Math.cos(droneYaw) * input.pitch * speed;
+            dronePos.x -= Math.sin(droneYaw) * input.pitch * speed;
+            dronePos.x += Math.cos(droneYaw) * input.roll * speed;
+            dronePos.z -= Math.sin(droneYaw) * input.roll * speed;
+            droneGroup.position.copy(dronePos); droneGroup.rotation.y = droneYaw;
+            droneVisuals.rotation.x = input.pitch * 0.5; droneVisuals.rotation.z = -input.roll * 0.5;
+            props.forEach(p => p.rotation.y += 0.8 + input.throttle);
+        }
+
+        function updateCamera() {
+            if (!gameStarted) {
+                // Orbit Camera for Start Screen
+                const t = Date.now() * 0.0002;
+                camera.position.set(Math.cos(t)*8, 3, Math.sin(t)*8);
+                camera.lookAt(0, 2, 0);
+                return;
+            }
+            if (cameraMode === 'third') {
+                const offset = new THREE.Vector3(0, 1.2, 2.5);
+                offset.applyAxisAngle(new THREE.Vector3(0,1,0), droneYaw);
+                const target = new THREE.Vector3().copy(dronePos).add(offset);
+                camera.position.lerp(target, 0.1); camera.lookAt(dronePos);
+            } else {
+                camera.position.copy(dronePos);
+                const euler = new THREE.Euler(input.pitch * 0.5, droneYaw, -input.roll * 0.5, 'YXZ');
+                camera.quaternion.setFromEuler(euler);
+            }
+        }
+
+        const canvas = document.getElementById('graphCanvas'); const ctx = canvas.getContext('2d');
+        canvas.width = 320; canvas.height = 130;
+        const hist = { t:[], y:[], p:[], r:[] };
+
+        function updateGraph() {
+            if (!gameStarted) return;
+            if(hist.t.length > 320) { hist.t.shift(); hist.y.shift(); hist.p.shift(); hist.r.shift(); }
+            hist.t.push(input.throttle); hist.y.push(input.yaw); hist.p.push(input.pitch); hist.r.push(input.roll);
+            ctx.clearRect(0, 0, 320, 130);
+            ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0,65); ctx.lineTo(320,65); ctx.stroke();
+            const draw = (arr, c) => {
+                ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath();
+                for(let i=0; i<arr.length; i++) ctx.lineTo(i, 65 - arr[i]*60);
+                ctx.stroke();
+            };
+            draw(hist.t, '#ff3333'); draw(hist.y, '#33ff33'); draw(hist.p, '#00ccff'); draw(hist.r, '#ffff33');
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateInput(); updatePhysics(); updateCamera(); updateGraph();
+            renderer.render(scene, camera);
+        }
+        animate();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
