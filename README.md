@@ -1,5 +1,6 @@
 # Web-Based Drone Flight Simulator
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Play_Now-success?style=for-the-badge&logo=google-chrome&logoColor=white)](https://msubham06.github.io/Drone_Simulator/)
 ![Project Status](https://img.shields.io/badge/Status-Active_Development-green)
 ![Tech](https://img.shields.io/badge/Built_With-Three.js_|_WebGL-black)
 ![License](https://img.shields.io/badge/License-MIT-blue)
