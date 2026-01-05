@@ -1,4 +1,4 @@
-# 🚁 Web-Based Drone Flight Simulator
+# Web-Based Drone Flight Simulator
 
 ![Project Status](https://img.shields.io/badge/Status-Active_Development-green)
 ![Tech](https://img.shields.io/badge/Built_With-Three.js_|_WebGL-black)
