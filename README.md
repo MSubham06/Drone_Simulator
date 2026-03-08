@@ -1,4 +1,5 @@
 # Web-Based Drone Flight Simulator
+Note : 1st Stage Completed will improve shortly for 2nd Stage Soon.
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Play_Now-success?style=for-the-badge&logo=google-chrome&logoColor=white)](https://msubham06.github.io/Drone_Simulator/)
 
