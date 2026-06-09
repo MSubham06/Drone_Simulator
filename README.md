@@ -4,7 +4,7 @@ Note : 1st Stage Completed will improve shortly for 2nd Stage Soon.
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Play_Now-success?style=for-the-badge&logo=google-chrome&logoColor=white)](https://msubham06.github.io/Drone_Simulator/)
 
 ![Project Status](https://img.shields.io/badge/Status-Active_Development-green)
-![Tech](https://img.shields.io/badge/Built_With-Three.js_|_WebGL-black)
+![Tech](https://img.shields.io/badge/Built_With-Three.js_|_WebGL-yellow)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
 A realistic, physics-based drone flight simulator that runs entirely in your web browser. Built with **Three.js** and the **Web Gamepad API**, this project simulates the flight dynamics of a quadcopter, complete with procedural audio, day/night cycles, and FPV capability.
